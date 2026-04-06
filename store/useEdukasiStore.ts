@@ -29,7 +29,7 @@ export const useEdukasiStore = create<EdukasiState>((set) => ({
     if (type === 'Semua') return { contentTypes: ['Semua'] };
     
     // If a specific type is clicked, remove 'Semua' if it exists
-    let newTypes = state.contentTypes.filter((t) => t !== 'Semua');
+    let newTypes: ContentType[] = state.contentTypes.filter((t) => t !== 'Semua');
     
     if (newTypes.includes(type)) {
       // Remove it if already selected
