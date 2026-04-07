@@ -13,6 +13,14 @@ export function TeamSection() {
     },
     {
       id: "t2",
+      name: "Zahrotul Kamila",
+      role: "Anggota Tim",
+      studyContext: "Kesehatan Masyarakat",
+      photoUrl:
+        "https://ui-avatars.com/api/?name=Zahrotul+Kamila&background=0D9488&color=fff&size=400",
+    },
+    {
+      id: "t3",
       name: "Aulia Friska Fadillah",
       role: "Anggota Tim",
       studyContext: "Kesehatan Masyarakat",
@@ -20,7 +28,7 @@ export function TeamSection() {
         "https://ui-avatars.com/api/?name=Aulia+Friska&background=0D9488&color=fff&size=400",
     },
     {
-      id: "t3",
+      id: "t4",
       name: "Mayona Putri",
       role: "Anggota Tim",
       studyContext: "Kesehatan Masyarakat",
@@ -28,7 +36,7 @@ export function TeamSection() {
         "https://ui-avatars.com/api/?name=Mayona+Putri&background=0D9488&color=fff&size=400",
     },
     {
-      id: "t4",
+      id: "t5",
       name: "Muhammad Aka Sahadi",
       role: "Anggota Tim",
       studyContext: "Teknologi Informasi",
