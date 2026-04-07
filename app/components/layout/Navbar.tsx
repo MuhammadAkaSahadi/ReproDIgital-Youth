@@ -37,18 +37,20 @@ export function Navbar() {
       {/* Desktop & Tablet Top Navigation */}
       <header className="fixed top-0 left-0 right-0 z-50 h-[64px] lg:h-[80px] bg-white/80 backdrop-blur-md border-b md:border-none md:shadow-sm border-gray-200 transition-all duration-300">
         <div className="container mx-auto px-4 lg:px-8 h-full flex items-center justify-between">
-          
           {/* Mobile Hamburger (Left on mobile) */}
           <div className="flex items-center lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger 
+              <SheetTrigger
                 render={
                   <Button variant="ghost" size="icon" className="text-gray-900">
                     <Menu className="h-6 w-6" />
                   </Button>
-                } 
+                }
               />
-              <SheetContent side="left" className="w-[80%] max-w-[300px] p-0 flex flex-col">
+              <SheetContent
+                side="left"
+                className="w-[80%] max-w-[300px] p-0 flex flex-col"
+              >
                 <SheetHeader className="p-4 border-b text-left">
                   <SheetTitle className="text-teal-600 font-heading font-bold text-xl">
                     ReproDigital
@@ -63,15 +65,15 @@ export function Navbar() {
                         href={link.href}
                         onClick={() => setIsOpen(false)}
                         className={`flex items-center px-6 py-4 transition-colors ${
-                          isActive 
-                            ? "bg-teal-50 text-teal-600 border-r-4 border-teal-600" 
+                          isActive
+                            ? "bg-teal-50 text-teal-600 border-r-4 border-teal-600"
                             : "text-gray-600 hover:bg-gray-50 hover:text-teal-600"
                         }`}
                       >
                         <link.icon className="h-6 w-6 mr-4" />
                         <span className="font-medium">{link.name}</span>
                       </Link>
-                    )
+                    );
                   })}
                 </nav>
               </SheetContent>
@@ -97,7 +99,9 @@ export function Navbar() {
                   key={link.name}
                   href={link.href}
                   className={`text-sm font-medium transition-colors relative py-2 ${
-                    isActive ? "text-teal-600" : "text-gray-600 hover:text-teal-500"
+                    isActive
+                      ? "text-teal-600"
+                      : "text-gray-600 hover:text-teal-500"
                   }`}
                 >
                   {link.name}
@@ -116,7 +120,7 @@ export function Navbar() {
             </Button>
             {/* Show Login only on tablet/desktop as mobile has bottom nav for profile */}
             <div className="hidden md:block">
-              <Button className="bg-coral-500 hover:bg-coral-600 text-white rounded-full px-6 transition-colors">
+              <Button render={<Link href="/login" />} className="bg-coral-500 hover:bg-coral-600 text-white rounded-full px-6 transition-colors">
                 Masuk / Daftar
               </Button>
             </div>
@@ -136,8 +140,12 @@ export function Navbar() {
                 isActive ? "text-teal-600" : "text-gray-500"
               }`}
             >
-              <div className={`p-1 rounded-full ${isActive ? "bg-teal-50" : ""}`}>
-                <link.icon className={`h-6 w-6 ${isActive ? "text-teal-600 fill-teal-50" : ""}`} />
+              <div
+                className={`p-1 rounded-full ${isActive ? "bg-teal-50" : ""}`}
+              >
+                <link.icon
+                  className={`h-6 w-6 ${isActive ? "text-teal-600 fill-teal-50" : ""}`}
+                />
               </div>
               <span className="text-[10px] sm:text-xs font-medium leading-none">
                 {link.name}
@@ -146,7 +154,7 @@ export function Navbar() {
           );
         })}
       </nav>
-      
+
       {/* Spacer to prevent content from going under navbars */}
       <div className="h-[64px] lg:h-[80px]" />
     </>

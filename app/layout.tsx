@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Navbar } from "@/app/components/layout/Navbar";
-import { Footer } from "@/app/components/layout/Footer";
+import { NavbarFooterWrapper } from "@/app/components/layout/NavbarFooterWrapper";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -33,11 +33,10 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", plusJakartaSans.variable, inter.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col font-body">
-        <Navbar />
-        <main className="flex-1 flex flex-col">
+        <NavbarFooterWrapper>
           {children}
-        </main>
-        <Footer />
+        </NavbarFooterWrapper>
+        <Toaster />
       </body>
     </html>
   );
