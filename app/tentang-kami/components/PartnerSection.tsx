@@ -4,9 +4,9 @@ export function PartnerSection() {
   const partners = [
     {
       id: "p1",
-      name: "SMP Madinatul Ulum",
+      name: "SMP 1 Jenggawah",
       type: "Sekolah Mitra",
-      description: "Mitra institusi pendidikan untuk diseminasi literasi dan lokakarya langsung di pedesaan Jember.",
+      description: "Mitra institusi pendidikan untuk diseminasi literasi dan lokakarya langsung di kota Jember.",
       icon: <BookOpenCheck className="w-10 h-10 text-teal-600" strokeWidth={1.5} />,
     },
     {
@@ -18,9 +18,9 @@ export function PartnerSection() {
     },
     {
       id: "p3",
-      name: "Desa Cangkring",
-      type: "Pemerintah Desa",
-      description: "Pemberi keleluasaan akses ruang aman dan persetujuan inisiatif pembinaan kepemudaan desa.",
+      name: "Kecamatan Jenggawah",
+      type: "Pemerintah Daerah",
+      description: "Pemberi keleluasaan akses ruang aman dan persetujuan inisiatif pembinaan kepemudaan daerah.",
       icon: <Landmark className="w-10 h-10 text-teal-600" strokeWidth={1.5} />,
     },
     {
