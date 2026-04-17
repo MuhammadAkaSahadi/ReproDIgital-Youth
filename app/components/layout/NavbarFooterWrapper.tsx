@@ -6,16 +6,16 @@ import { Footer } from "./Footer";
 
 export function NavbarFooterWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Sembunyikan Navbar dan Footer jika berada di halaman auth seperti register atau login
-  const isAuthPage = pathname.startsWith("/register") || pathname.startsWith("/login");
+  // Sembunyikan Navbar dan Footer jika berada di halaman auth atau dashboard
+  const hideNavbarFooter = pathname.startsWith("/register") || pathname.startsWith("/login") || pathname.startsWith("/dashboard");
 
   return (
     <>
-      {!isAuthPage && <Navbar />}
+      {!hideNavbarFooter && <Navbar />}
       <main className="flex-1 flex flex-col">
         {children}
       </main>
-      {!isAuthPage && <Footer />}
+      {!hideNavbarFooter && <Footer />}
     </>
   );
 }
