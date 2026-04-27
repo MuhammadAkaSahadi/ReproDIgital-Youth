@@ -45,3 +45,18 @@ export async function uploadAvatarServer(formData: FormData, userId: string) {
 
   return bustedUrl;
 }
+
+export async function deleteAccountServer(userId: string) {
+  if (!userId) {
+    throw new Error("User ID tidak ditemukan");
+  }
+
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+  if (error) {
+    console.error("Gagal menghapus user (admin):", error);
+    throw new Error(error.message);
+  }
+
+  return true;
+}

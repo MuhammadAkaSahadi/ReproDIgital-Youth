@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Mail, MailCheck, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -10,30 +9,43 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { resetPasswordSchema, ResetPasswordSchema } from "@/validations/auth-validation";
+import { createClient } from "@/utils/supabase/client";
 
-const resetPasswordSchema = z.object({
-  email: z.string().email("Format email tidak valid"),
-});
-
-type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 export function ResetPasswordForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
 
-  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordValues>({
+  const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordSchema>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { email: "" }
   });
 
-  const onSubmit = async (data: ResetPasswordValues) => {
+  const onSubmit = async (data: ResetPasswordSchema) => {
     setIsLoading(true);
-    // Simulasi loading 2 detik sebelum masuk mode sukses
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setSubmittedEmail(data.email);
-    setIsLoading(false);
-    setIsSubmitted(true);
+    
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+      });
+
+      if (error) {
+        console.error("Error sending reset password email:", error.message);
+        // Kita juga bisa menambahkan notasi error toast di masa mendatang
+      }
+      
+      // Baik berhasil maupun gagal, biasanya kita tetap menampilkan sukses
+      // agar tidak terjadi email enumeration (keamanan)
+      setSubmittedEmail(data.email);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Terjadi kesalahan:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // SUCCESS STATE VIEW

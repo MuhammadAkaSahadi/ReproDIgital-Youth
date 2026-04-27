@@ -21,14 +21,6 @@ export function ProfileHeader({ profile }: { profile?: any }) {
             <rect width="100%" height="100%" fill="url(#gridPattern)" />
           </svg>
         </div>
-        
-        {/* Edit Cover / Profile Button (Absolute Desktop Right) */}
-        <div className="hidden md:block absolute bottom-6 right-8 lg:right-16 z-20">
-          <Button variant="outline" className="bg-white/90 hover:bg-teal-600 hover:text-white border-teal-600 text-teal-700 transition-all shadow-sm">
-            <Edit2 className="w-4 h-4 mr-2" />
-            Edit Profil
-          </Button>
-        </div>
       </div>
 
       {/* Avatar & Profile Info Container */}
@@ -78,13 +70,6 @@ export function ProfileHeader({ profile }: { profile?: any }) {
               <Calendar className="w-[18px] h-[18px]" />
               <span>Bergabung {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short' }) : 'Baru Saja'}</span>
             </div>
-          </div>
-
-          {/* Mobile Edit Button */}
-          <div className="mt-6 md:hidden">
-             <Button variant="outline" className="w-full bg-white hover:bg-teal-600 hover:text-white border-teal-600 text-teal-700">
-              <Edit2 className="w-4 h-4 mr-2" /> Edit Profil
-             </Button>
           </div>
 
         </div>

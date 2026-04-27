@@ -1,3 +1,12 @@
+-- ============================================================
+-- FILE: 09_add_email_to_profiles.sql
+-- DESC: Menambahkan kolom email pada profil dan update trigger
+-- ============================================================
+
+-- Tambahkan kolom email jika belum ada
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email TEXT;
+
+-- Update fungsi handle_new_user untuk memasukkan email
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN

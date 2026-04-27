@@ -23,6 +23,7 @@ CREATE TYPE gender_type AS ENUM ('male', 'female', 'prefer_not_to_say');
 CREATE TABLE profiles (
     id              UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     role            user_role NOT NULL DEFAULT 'student',
+    email           TEXT,
     full_name       TEXT,
     username        TEXT UNIQUE,
     avatar_url      TEXT,
@@ -97,9 +98,10 @@ CREATE POLICY "counselor_stats_update_own" ON counselor_stats
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO profiles (id, full_name, avatar_url, role)
+    INSERT INTO profiles (id, email, full_name, avatar_url, role)
     VALUES (
         NEW.id,
+        NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
         NEW.raw_user_meta_data->>'avatar_url',
         'student'

@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,22 +17,14 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { completeProfile } from "../actions";
+import { OnboardingSchema, onboardingSchema } from "@/validations/auth-validation";
 
-const onboardingSchema = z.object({
-  fullName: z.string().min(3, "Nama lengkap harus minimal 3 karakter"),
-  schoolName: z.string().min(1, "Nama sekolah wajib diisi"),
-  grade: z.string().min(1, "Kelas wajib dipilih"),
-  gender: z.string().min(1, "Gender wajib dipilih"),
-  birthDate: z.string().min(1, "Pilih tanggal lahir Anda"),
-});
-
-type OnboardingFormValues = z.infer<typeof onboardingSchema>;
 
 export function OnboardingForm({ defaultName }: { defaultName: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const { register, handleSubmit, formState: { errors }, setValue, trigger } = useForm<OnboardingFormValues>({
+  const { register, handleSubmit, formState: { errors }, setValue, trigger } = useForm<OnboardingSchema>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
       fullName: defaultName || "",
@@ -45,7 +35,7 @@ export function OnboardingForm({ defaultName }: { defaultName: string }) {
     }
   });
 
-  const onSubmit = async (data: OnboardingFormValues) => {
+  const onSubmit = async (data: OnboardingSchema) => {
     setIsLoading(true);
 
     const formData = new FormData();

@@ -12,11 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-
-import { z } from "zod";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
+import { goalSchema, GoalSchema } from "@/validations/goal-validation";
 
 // Mock Data
 const INITIAl_GOALS = [
@@ -49,14 +48,6 @@ const INITIAl_GOALS = [
   },
 ];
 
-const goalSchema = z.object({
-  title: z.string().min(3, "Judul rencana minimal 3 karakter"),
-  category: z.string().min(1, "Kategori harus dipilih"),
-  deadline: z.date({ message: "Tenggat waktu harus dipilih" }),
-});
-
-type GoalFormValues = z.infer<typeof goalSchema>;
-
 export default function PerencanaanMasaDepanPage() {
   const [goals, setGoals] = useState(INITIAl_GOALS);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,7 +59,7 @@ export default function PerencanaanMasaDepanPage() {
     control,
     reset,
     formState: { errors },
-  } = useForm<GoalFormValues>({
+  } = useForm<GoalSchema>({
     resolver: zodResolver(goalSchema),
     defaultValues: {
       title: "",
@@ -76,7 +67,7 @@ export default function PerencanaanMasaDepanPage() {
     },
   });
 
-  const onSubmit = (data: GoalFormValues) => {
+  const onSubmit = (data: GoalSchema) => {
     const newGoal = {
       id: goals.length + 1,
       title: data.title,
