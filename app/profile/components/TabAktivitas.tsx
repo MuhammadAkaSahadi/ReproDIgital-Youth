@@ -6,8 +6,7 @@ import { BookOpen, Target, HelpCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
-export function TabAktivitas() {
-  const { activities } = useProfileStore();
+export function TabAktivitas({ activities = [] }: { activities: any[] }) {
   const [filter, setFilter] = useState<ActivityType | "semua">("semua");
 
   const filteredActivities = filter === "semua" 

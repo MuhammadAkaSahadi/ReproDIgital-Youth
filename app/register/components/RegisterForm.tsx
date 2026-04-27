@@ -19,6 +19,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { signUpWithEmail, signInWithGoogle } from "@/app/auth/actions";
 
 const registerSchema = z.object({
   fullName: z.string().min(3, "Nama lengkap harus minimal 3 karakter"),
@@ -80,13 +81,30 @@ export function RegisterForm() {
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
-    // Simulasi API delay 2 detik sesuai request
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log("Form Data: ", data);
+    
+    const formData = new FormData();
+    formData.append("fullName", data.fullName);
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+    formData.append("schoolName", data.schoolName);
+    formData.append("grade", data.grade);
+    
+    const result = await signUpWithEmail(formData);
+    
     setIsLoading(false);
-    toast.success("Akun Berhasil Dibuat!", {
-      description: "Anda kini telah resmi bergabung. Silakan masuk dengan email Anda.",
-    });
+
+    if (result.error) {
+      toast.error("Registrasi Gagal", {
+        description: result.error,
+      });
+    } else {
+      toast.success("Pendaftaran berhasil!", {
+        description: "Akun berhasil dibuat. Silakan cek email Anda atau login.",
+      });
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
+    }
   };
 
   return (
@@ -251,6 +269,7 @@ export function RegisterForm() {
         <Button 
           type="button" 
           variant="outline"
+          onClick={() => signInWithGoogle()}
           className="w-full h-14 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 font-semibold rounded-xl text-[15px] transition-all"
         >
           <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -266,7 +285,6 @@ export function RegisterForm() {
         <p className="text-center text-[14px] text-gray-600 mt-6 pb-6">
           Sudah punya akun? <Link href="/login" className="text-teal-600 font-bold hover:text-coral-500 hover:underline transition-colors">Masuk di sini</Link>
         </p>
-
       </form>
     </div>
   );

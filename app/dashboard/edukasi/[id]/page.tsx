@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Calendar, User, Eye, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function ArtikelDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -44,12 +44,13 @@ export default async function ArtikelDetailPage({ params }: { params: Promise<{ 
     <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Tombol Kembali */}
       <div>
-        <Button variant="ghost" asChild className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 -ml-4">
-          <Link href="/dashboard/edukasi">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Kembali ke Hub Edukasi
-          </Link>
-        </Button>
+        <Link 
+          href="/dashboard/edukasi"
+          className={buttonVariants({ variant: "ghost", className: "text-gray-500 hover:text-gray-900 hover:bg-gray-100 -ml-4" })}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Kembali ke Hub Edukasi
+        </Link>
       </div>
 
       {/* Hero Image Placeholder */}

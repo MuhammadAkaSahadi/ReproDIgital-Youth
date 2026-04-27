@@ -6,10 +6,20 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { AlertTriangle, Loader2, Camera, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { uploadAvatarServer } from "../actions";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { 
   Dialog, 
   DialogContent, 
@@ -25,9 +35,12 @@ import {
 const profileSchema = z.object({
   fullName: z.string().min(1, "Nama wajib diisi").max(100),
   username: z.string().min(3).regex(/^[a-zA-Z0-9_]+$/, "Hanya huruf, angka, dan garis bawah"),
-  bio: z.string().max(160, "Bio maksimal 160 karakter"),
-  gender: z.string(),
-  schoolName: z.string().min(1, "Nama sekolah wajib diisi"),
+  bio: z.string().max(160, "Bio maksimal 160 karakter").optional(),
+  gender: z.string().optional(),
+  birthDate: z.string().optional(),
+  schoolName: z.string().optional(),
+  grade: z.string().optional(),
+  specialization: z.string().optional(),
 });
 
 const securitySchema = z.object({
@@ -45,9 +58,12 @@ const securitySchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 type SecurityFormValues = z.infer<typeof securitySchema>;
 
-export function TabPengaturan() {
+export function TabPengaturan({ profile }: { profile?: any }) {
+  const router = useRouter();
+  
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isSecurityLoading, setIsSecurityLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   // Delete Modal state
   const [deleteInput, setDeleteInput] = useState("");
@@ -57,11 +73,14 @@ export function TabPengaturan() {
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: "Arif Rahman",
-      username: "arifrhmn_",
-      bio: "Berkomitmen untuk terus belajar dan membagikan informasi edukatif seputar kesehatan remaja.",
-      gender: "Laki-laki",
-      schoolName: "SMA Negeri 1 Jember",
+      fullName: profile?.full_name || "",
+      username: profile?.username || "",
+      bio: profile?.bio || "",
+      gender: profile?.gender || "", 
+      birthDate: profile?.birth_date || "",
+      schoolName: profile?.school_name || "",
+      grade: profile?.grade || "",
+      specialization: profile?.specialization || "",
     }
   });
 
@@ -70,24 +89,87 @@ export function TabPengaturan() {
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" }
   });
 
-  // Susbmit Handlers
+  // Avatar Upload Handler
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+
+    setIsUploadingAvatar(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const publicUrl = await uploadAvatarServer(formData, profile.id);
+      
+      // Update the explicit profile table
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', profile.id);
+        
+      if (!error) {
+        toast.success("Foto profil berhasil diperbarui!");
+        router.refresh();
+      } else {
+        toast.error("Gagal sinkronisasi data foto profil.");
+      }
+    } catch (err: any) {
+      toast.error(`Gagal mengunggah foto profil: ${err.message || 'Unknown error'}`);
+    }
+    
+    setIsUploadingAvatar(false);
+  };
+
+  // Profile Submit Handler Integrasi DB
   const onProfileSubmit = async (data: ProfileFormValues) => {
+    if (!profile?.id) return;
     setIsProfileLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
+    
+    const supabase = createClient();
+    const { error } = await supabase.from('profiles').update({
+      full_name: data.fullName,
+      username: data.username,
+      bio: data.bio || null,
+      gender: data.gender || null,
+      birth_date: data.birthDate || null,
+      school_name: data.schoolName || null,
+      grade: data.grade || null,
+      specialization: data.specialization || null,
+    }).eq('id', profile.id);
+
+    if (error) {
+      toast.error(`Gagal memperbarui profil: ${error.message}`);
+    } else {
+      toast.success("Profil berhasil diperbarui!");
+      router.refresh(); // Memuat ulang data dari Server Component /profile/page.tsx
+    }
+    
     setIsProfileLoading(false);
-    toast.success("Profil berhasil diperbarui!");
   };
 
   const onSecuritySubmit = async (data: SecurityFormValues) => {
     setIsSecurityLoading(true);
-    await new Promise(r => setTimeout(r, 1500));
+    const supabase = createClient();
+    
+    const { error } = await supabase.auth.updateUser({
+      password: data.newPassword
+    });
+
     setIsSecurityLoading(false);
-    securityForm.reset();
-    toast.success("Keamanan akun berhasil diperbarui!");
+    if (error) {
+       toast.error(`Gagal: ${error.message}`);
+    } else {
+       securityForm.reset();
+       toast.success("Keamanan akun berhasil diperbarui!");
+    }
   };
 
   const onDeleteConfirm = async () => {
     setIsDeleting(true);
+    // Normally you'd call a Supabase Edge Function to delete the auth user
+    // Since direct delete is restricted on client
     await new Promise(r => setTimeout(r, 2000));
     setIsDeleting(false);
     window.location.href = "/";
@@ -103,14 +185,27 @@ export function TabPengaturan() {
         <div className="flex flex-col sm:flex-row gap-8 mb-8">
           <div className="flex flex-col items-center gap-4">
             <div className="w-24 h-24 rounded-full bg-gray-200 border-2 border-gray-200 overflow-hidden relative group">
-              <img src="https://ui-avatars.com/api/?name=Arif+Rahman&background=0D9488&color=fff&size=400" alt="Avatar" />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center cursor-pointer">
-                <Camera className="w-6 h-6 text-white" />
-              </div>
+              <img 
+                src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.full_name || 'User')}&background=0D9488&color=fff&size=400`} 
+                alt="Avatar" 
+                className="w-full h-full object-cover" 
+              />
+              <Input
+                type="file"
+                id="avatar-upload"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={isUploadingAvatar}
+              />
+              <Label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center cursor-pointer">
+                {isUploadingAvatar ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-6 h-6 text-white" />}
+              </Label>
             </div>
             <div className="flex flex-col gap-2 w-full">
-              <Button variant="outline" size="sm" className="w-full text-teal-700 border-teal-600 hover:bg-teal-50">Upload Baru</Button>
-              <Button variant="ghost" size="sm" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50">Hapus Foto</Button>
+              <Label htmlFor="avatar-upload" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50 border h-9 px-3 w-full text-teal-700 border-teal-600 hover:bg-teal-50 cursor-pointer">
+                {isUploadingAvatar ? 'Mengunggah...' : 'Upload Baru'}
+              </Label>
             </div>
           </div>
 
@@ -131,17 +226,74 @@ export function TabPengaturan() {
               </div>
             </div>
             
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label>Tanggal Lahir</Label>
+                <Input type="date" {...profileForm.register("birthDate")} className="h-11 focus-visible:ring-teal-500 text-gray-700" />
+              </div>
+              <div className="space-y-2">
+                <Label>Jenis Kelamin</Label>
+                <select 
+                  {...profileForm.register("gender")} 
+                  className="flex h-11 w-full items-center justify-between rounded-md border border-gray-200 bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-white placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700"
+                >
+                  <option value="" disabled>Pilih Gender</option>
+                  <option value="male">Laki-laki</option>
+                  <option value="female">Perempuan</option>
+                  <option value="prefer_not_to_say">Memilih untuk tidak menyebutkan</option>
+                </select>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Bio <span className="text-gray-400 font-normal ml-1">({profileForm.watch("bio")?.length || 0}/160)</span></Label>
               <textarea 
                 {...profileForm.register("bio")}
                 className="w-full min-h-[100px] p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-teal-500 text-sm"
               />
+              {profileForm.formState.errors.bio && <p className="text-red-500 text-xs">{profileForm.formState.errors.bio.message}</p>}
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label>Nama Sekolah / Institusi</Label>
+                <Input {...profileForm.register("schoolName")} className="h-11 focus-visible:ring-teal-500" />
+              </div>
+              <div className="space-y-2">
+                <Label>Kelas (Tahapan)</Label>
+                <Select 
+                  defaultValue={profileForm.getValues("grade")} 
+                  onValueChange={(val: string | null) => { 
+                    profileForm.setValue("grade", val || ""); 
+                    profileForm.trigger("grade"); 
+                  }}
+                >
+                  <SelectTrigger className="h-11 border-gray-200 focus:ring-1 focus:ring-teal-500 text-gray-700">
+                    <SelectValue placeholder="Pilih kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Kelas 7 SMP">Kelas 7 SMP</SelectItem>
+                    <SelectItem value="Kelas 8 SMP">Kelas 8 SMP</SelectItem>
+                    <SelectItem value="Kelas 9 SMP">Kelas 9 SMP</SelectItem>
+                    <SelectItem value="Kelas 10 SMA">Kelas 10 SMA</SelectItem>
+                    <SelectItem value="Kelas 11 SMA">Kelas 11 SMA</SelectItem>
+                    <SelectItem value="Kelas 12 SMA">Kelas 12 SMA</SelectItem>
+                    <SelectItem value="Mahasiswa">Mahasiswa</SelectItem>
+                    <SelectItem value="Lulus/Lainnya">Lulus / Lainnya</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
             <div className="space-y-2">
-              <Label>Nama Sekolah</Label>
-              <Input {...profileForm.register("schoolName")} className="h-11 focus-visible:ring-teal-500 max-w-sm" />
+              <Label>Spesialisasi <span className="text-gray-400 font-normal ml-1">(Khusus Konselor)</span></Label>
+              <Input 
+                {...profileForm.register("specialization")} 
+                disabled={profile?.role !== 'counselor'}
+                className="h-11 focus-visible:ring-teal-500 disabled:bg-gray-100 disabled:cursor-not-allowed text-gray-700" 
+                placeholder="Mis. Psikologi Klinis, Bimbingan Konseling" 
+              />
+              {profile?.role !== 'counselor' && <p className="text-gray-500 text-xs mt-1">Status Anda tidak memerlukan spesialisasi.</p>}
             </div>
 
             <div className="pt-4 flex gap-3">
@@ -149,7 +301,7 @@ export function TabPengaturan() {
                 {isProfileLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                 {isProfileLoading ? "Menyimpan" : "Simpan Profil"}
               </Button>
-              <Button type="button" variant="outline" className="border-gray-300">Batal</Button>
+              <Button type="button" variant="outline" className="border-gray-300" onClick={() => profileForm.reset()}>Batal</Button>
             </div>
           </form>
         </div>
@@ -211,7 +363,7 @@ export function TabPengaturan() {
                    <AlertTriangle className="w-5 h-5" /> Peringatan Fatal
                  </DialogTitle>
                  <DialogDescription className="pt-4 text-black text-sm">
-                   Aksi ini tidak bisa dibatalkan. Ini akan secara permanen menghapus akun <strong>@arifrhmn_</strong> dan menghapus data Anda dari server kami.
+                   Aksi ini tidak bisa dibatalkan. Ini akan secara permanen menghapus akun <strong>@{profile?.username || 'user'}</strong> dan menghapus data Anda dari server kami.
                  </DialogDescription>
                </DialogHeader>
 

@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { NavbarFooterWrapper } from "@/app/components/layout/NavbarFooterWrapper";
 import { Toaster } from "@/components/ui/sonner";
+import { createClient } from "@/utils/supabase/server";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -22,18 +23,29 @@ export const metadata: Metadata = {
   description: "Platform Edukasi dan Konseling Rekam Jejak Remaja",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let profile = null;
+  if (user) {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (!error && data) { 
+      profile = data; 
+    }
+  }
+
   return (
     <html
       lang="id"
       className={cn("h-full", "antialiased", plusJakartaSans.variable, inter.variable, "font-sans", geist.variable)}
     >
       <body className="min-h-full flex flex-col font-body">
-        <NavbarFooterWrapper>
+        <NavbarFooterWrapper profile={profile}>
           {children}
         </NavbarFooterWrapper>
         <Toaster />

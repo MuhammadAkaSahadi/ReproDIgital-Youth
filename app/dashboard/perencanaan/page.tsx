@@ -52,7 +52,7 @@ const INITIAl_GOALS = [
 const goalSchema = z.object({
   title: z.string().min(3, "Judul rencana minimal 3 karakter"),
   category: z.string().min(1, "Kategori harus dipilih"),
-  deadline: z.date({ required_error: "Tenggat waktu harus dipilih" }),
+  deadline: z.date({ message: "Tenggat waktu harus dipilih" }),
 });
 
 type GoalFormValues = z.infer<typeof goalSchema>;
@@ -111,11 +111,13 @@ export default function PerencanaanMasaDepanPage() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-teal-600 hover:bg-teal-700 text-white transition-fast shrink-0 gap-2 font-medium">
-              <Plus className="h-4 w-4" />
-              Tambah Rencana
-            </Button>
+          <DialogTrigger
+            render={
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white transition-fast shrink-0 gap-2 font-medium" />
+            }
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Rencana
           </DialogTrigger>
           <DialogContent className="sm:max-w-[425px] overflow-visible">
             <DialogHeader>
@@ -165,18 +167,20 @@ export default function PerencanaanMasaDepanPage() {
                   name="deadline"
                   render={({ field }) => (
                     <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal border-gray-200",
-                            !field.value && "text-muted-foreground",
-                            errors.deadline && "border-red-500 text-red-500"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? format(field.value, "PPP", { locale: id }) : <span>Pilih tanggal</span>}
-                        </Button>
+                      <PopoverTrigger 
+                        render={
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal border-gray-200",
+                              !field.value && "text-muted-foreground",
+                              errors.deadline && "border-red-500 text-red-500"
+                            )}
+                          />
+                        }
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? format(field.value, "PPP", { locale: id }) : <span>Pilih tanggal</span>}
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar

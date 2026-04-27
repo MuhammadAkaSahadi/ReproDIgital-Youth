@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Send, Paperclip, CheckCheck, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,11 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/utils/supabase/client";
+import { sendMessage } from "./actions";
+import { format } from "date-fns";
 
-// Mock Data
-const contacts = [
+// Mock Data untuk render awal UI
+const MOCK_CONTACTS = [
   {
-    id: 1,
+    id: "uuid-session-1", // Diganti menjadi string UUID later in real DB
     name: "Siswa A",
     topic: "Kesehatan Reproduksi",
     lastMessage: "Terima kasih atas sarannya, Kak.",
@@ -22,7 +25,7 @@ const contacts = [
     status: "Aktif",
   },
   {
-    id: 2,
+    id: "uuid-session-2",
     name: "Siswa B",
     topic: "Perkawinan Anak",
     lastMessage: "Saya merasa bingung...",
@@ -31,60 +34,87 @@ const contacts = [
     active: false,
     status: "Menunggu",
   },
-  {
-    id: 3,
-    name: "Siswa C",
-    topic: "Hubungan Sehat",
-    lastMessage: "Baik, ngobrol besok ya.",
-    lastTime: "Kemarin",
-    unread: 0,
-    active: false,
-    status: "Selesai",
-  },
 ];
 
-const messages = [
+const INITIAL_MESSAGES = [
   {
-    id: 1,
-    text: "Halo Kak, saya ingin berkonsultasi mengenai perubahan yang saya alami akhir-akhir ini.",
-    time: "10:15",
-    isSender: false,
+    id: "mock-1",
+    content: "Halo Kak, saya ingin berkonsultasi mengenai perubahan yang saya alami akhir-akhir ini.",
+    created_at: new Date().toISOString(),
+    sender_id: "student-uuid", // assume not current user
   },
   {
-    id: 2,
-    text: "Halo Siswa A. Silakan ceritakan, di sini aman dan rahasiamu terjaga.",
-    time: "10:16",
-    isSender: true,
-  },
-  {
-    id: 3,
-    text: "Saya merasa cemas karena banyak mitos yang saya dengar dari teman-teman.",
-    time: "10:18",
-    isSender: false,
-  },
-  {
-    id: 4,
-    text: "Paham. Mari kita bahas satu per satu mitos tersebut. Apa yang paling membuatmu khawatir?",
-    time: "10:20",
-    isSender: true,
-  },
-  {
-    id: 5,
-    text: "Terima kasih atas sarannya, Kak. Saya merasa jauh lebih tenang sekarang.",
-    time: "10:30",
-    isSender: false,
+    id: "mock-2",
+    content: "Halo Siswa. Silakan ceritakan, di sini aman dan rahasiamu terjaga.",
+    created_at: new Date().toISOString(),
+    sender_id: "me", // assume current user
   },
 ];
 
 export default function KonselingChatPage() {
-  const [activeContact, setActiveContact] = useState(contacts[0]);
+  const [activeContact, setActiveContact] = useState(MOCK_CONTACTS[0]);
   const [messageInput, setMessageInput] = useState("");
+  const [messages, setMessages] = useState<any[]>(INITIAL_MESSAGES);
+  const [userId, setUserId] = useState<string>("me");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const supabase = createClient();
 
-  const handleSend = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Ambil current user untuk identifikasi "isSender"
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserId(data.user.id);
+      }
+    });
+
+    // Subscribe ke Realtime Supabase untuk tabel "messages"
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          // opsional: filter: `session_id=eq.${activeContact.id}`
+        },
+        (payload) => {
+          // Jika pesan baru dari channel realtime yang sama dengan kontak aktif
+          if (payload.new.session_id === activeContact.id) {
+            setMessages((prev) => [...prev, payload.new]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeContact, supabase]);
+
+  // Auto-scroll ke bawah saat ada pesan baru
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim()) return;
-    // Logika kirim pesan sementara
-    setMessageInput("");
+    
+    const contentToSend = messageInput;
+    setMessageInput(""); // optimistik clear
+    
+    // Server Action
+    const res = await sendMessage(activeContact.id, contentToSend);
+    
+    if (res.success && res.message) {
+      // Karena Realtime mungkin cepat, kita bisa membiarkan channel supabase yang push state,
+      // Tapi update optimistic juga aman asalkan kita handle deduplikasi.
+      // Di sini kita biarkan Realtime Subscription yang menambah list pesan untuk konsistensi di multi-device.
+    } else {
+      console.error(res.error);
+    }
   };
 
   return (
@@ -92,11 +122,10 @@ export default function KonselingChatPage() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold font-heading text-gray-900 tracking-tight">Konseling Sebaya</h1>
-          <p className="text-sm text-gray-600 mt-1">Sesi pendampingan siswa secara anonim dan aman</p>
+          <p className="text-sm text-gray-600 mt-1">Sesi pendampingan siswa secara anonim dan aman (Realtime Active)</p>
         </div>
       </div>
 
-      {/* Chat Container */}
       <Card className="flex-1 flex overflow-hidden border-gray-200 shadow-sm rounded-xl bg-white h-full w-full max-h-[600px] min-h-[500px]">
         {/* Left Sidebar (Contacts) */}
         <div className="w-full md:w-[320px] border-r border-gray-200 flex flex-col h-full bg-white shrink-0 hidden md:flex">
@@ -108,7 +137,7 @@ export default function KonselingChatPage() {
           </div>
           
           <div className="flex-1 overflow-y-auto w-full hide-scrollbar">
-            {contacts.map((contact) => (
+            {MOCK_CONTACTS.map((contact) => (
               <div
                 key={contact.id}
                 onClick={() => setActiveContact(contact)}
@@ -132,12 +161,6 @@ export default function KonselingChatPage() {
                   <p className="text-xs font-medium text-teal-600 mb-1">{contact.topic}</p>
                   <p className="text-xs text-gray-500 truncate">{contact.lastMessage}</p>
                 </div>
-
-                {contact.unread > 0 && (
-                  <div className="bg-coral-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center shrink-0 self-center">
-                    {contact.unread}
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -145,14 +168,11 @@ export default function KonselingChatPage() {
 
         {/* Right Pane (Chat Area) */}
         <div className="flex-1 flex flex-col h-full bg-gray-50/30">
-          {/* Chat Header */}
           <div className="h-16 border-b border-gray-200 bg-white px-4 md:px-6 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3 md:gap-4">
-              {/* Mobile Back Button */}
               <button className="md:hidden text-gray-500 hover:text-gray-700">
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-teal-600 text-white"><User className="w-5 h-5" /></AvatarFallback>
               </Avatar>
@@ -161,51 +181,44 @@ export default function KonselingChatPage() {
                 <p className="text-xs font-medium text-teal-600">{activeContact.topic}</p>
               </div>
             </div>
-
-            <div>
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {activeContact.status}
-              </span>
-            </div>
           </div>
 
           {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
-            <div className="text-center py-4">
-              <span className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full font-medium">
-                Hari ini
-              </span>
-            </div>
-
-            {messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={cn(
-                  "flex w-full",
-                  msg.isSender ? "justify-end" : "justify-start"
-                )}
-              >
+            {messages.map((msg) => {
+              const isSender = msg.sender_id === userId;
+              
+              return (
                 <div 
+                  key={msg.id} 
                   className={cn(
-                    "max-w-[85%] md:max-w-md px-4 py-2.5 rounded-2xl relative group",
-                    msg.isSender 
-                      ? "bg-teal-600 text-white rounded-br-sm" 
-                      : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-bl-sm"
+                    "flex w-full",
+                    isSender ? "justify-end" : "justify-start"
                   )}
                 >
-                  <p className="text-sm leading-relaxed mb-1">{msg.text}</p>
                   <div 
                     className={cn(
-                      "flex items-center justify-end gap-1 text-[10px]",
-                      msg.isSender ? "text-teal-100" : "text-gray-400"
+                      "max-w-[85%] md:max-w-md px-4 py-2.5 rounded-2xl relative group",
+                      isSender 
+                        ? "bg-teal-600 text-white rounded-br-sm" 
+                        : "bg-white border border-gray-100 shadow-sm text-gray-900 rounded-bl-sm"
                     )}
                   >
-                    <span>{msg.time}</span>
-                    {msg.isSender && <CheckCheck className="w-3 h-3" />}
+                    <p className="text-sm leading-relaxed mb-1">{msg.content}</p>
+                    <div 
+                      className={cn(
+                        "flex items-center justify-end gap-1 text-[10px]",
+                        isSender ? "text-teal-100" : "text-gray-400"
+                      )}
+                    >
+                      <span>{format(new Date(msg.created_at), "HH:mm")}</span>
+                      {isSender && <CheckCheck className="w-3 h-3" />}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Chat Input */}
@@ -219,7 +232,7 @@ export default function KonselingChatPage() {
                 <Input
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Ketik balasan Anda..."
+                  placeholder="Ketik balasan untuk siswa..."
                   className="w-full bg-gray-50 border-gray-300 focus-visible:ring-teal-600 rounded-full pr-4 pl-4 py-6 text-sm"
                 />
               </div>

@@ -19,8 +19,7 @@ function getBadgeIcon(iconType: string, isEarned: boolean) {
   }
 }
 
-export function TabBadge() {
-  const { badges } = useProfileStore();
+export function TabBadge({ badges = [] }: { badges: any[] }) {
   const earnedCount = badges.filter(b => b.dateEarned).length;
   const totalCount = badges.length;
   const progressPercent = Math.round((earnedCount / totalCount) * 100);

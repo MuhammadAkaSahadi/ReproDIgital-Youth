@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { signInWithGoogle } from "@/app/auth/actions";
 
 const loginSchema = z.object({
   email: z.string().email("Format email tidak valid"),
@@ -36,19 +37,29 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
-    // Simulasi API delay 2 detik sesuai request (Mock Backend)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log("Login Data: ", data);
+
+    const formData = new FormData();
+    formData.append("email", data.email);
+    formData.append("password", data.password);
+
+    const { signInWithEmail } = await import("@/app/auth/actions");
+    const result = await signInWithEmail(formData);
+
     setIsLoading(false);
     
-    toast.success("Berhasil Masuk!", {
-      description: "Anda akan segera dialihkan ke Dashboard.",
-    });
+    if (result.error) {
+      toast.error("Gagal Masuk", {
+        description: result.error,
+      });
+    } else {
+      toast.success("Berhasil Masuk!", {
+        description: "Anda akan segera dialihkan ke web.",
+      });
 
-    // Simulasi redirect setelah success
-    setTimeout(() => {
-      window.location.href = '/perencanaan';
-    }, 1000);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 500);
+    }
   };
 
   return (
@@ -142,6 +153,7 @@ export function LoginForm() {
         <Button 
           type="button" 
           variant="outline"
+          onClick={() => signInWithGoogle()}
           className="w-full h-14 bg-white hover:bg-gray-50 border-gray-300 text-gray-700 font-semibold rounded-xl text-[15px] transition-all"
         >
           <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

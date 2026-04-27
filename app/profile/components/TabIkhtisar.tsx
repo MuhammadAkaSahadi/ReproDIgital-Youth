@@ -17,8 +17,11 @@ function getBadgeIcon(iconType: string) {
   }
 }
 
-export function TabIkhtisar() {
-  const { summary, activeGoals, badges } = useProfileStore();
+export function TabIkhtisar({ summary, activeGoals = [], badges = [] }: {
+  summary: any;
+  activeGoals: any[];
+  badges: any[];
+}) {
   const recentEarnedBadges = badges.filter(b => b.dateEarned).slice(-5).reverse();
 
   return (

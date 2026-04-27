@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -28,13 +29,16 @@ export function CTASection() {
             konseling aman, dan perencanaan masa depan yang lebih baik. Ruang amanmu menanti.
           </p>
 
-          <Button 
-            className="w-full sm:w-auto bg-coral-500 hover:bg-coral-400 text-white h-14 px-12 rounded-lg shadow-lg hover:shadow-xl text-lg font-medium transition-all group"
-            render={<Link href="/register" />}
+          <Link 
+            href="/register"
+            className={cn(
+              buttonVariants({ variant: "default" }),
+              "w-full sm:w-auto bg-coral-500 hover:bg-coral-400 text-white h-14 px-12 rounded-[min(var(--radius-md),12px)] shadow-lg hover:shadow-xl text-lg font-medium transition-all group"
+            )}
           >
             Daftar Sekarang
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
+          </Link>
 
         </div>
       </div>

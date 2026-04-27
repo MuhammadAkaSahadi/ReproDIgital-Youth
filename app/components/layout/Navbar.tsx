@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, Menu, User, Home, BookOpen, Heart, GraduationCap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Menu, User, Home, BookOpen, Heart, GraduationCap, LayoutDashboard, Settings, LogOut } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -12,6 +13,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { signOut } from "@/app/auth/actions";
 
 const NAV_LINKS = [
   { name: "Beranda", href: "/", icon: Home },
@@ -28,9 +40,18 @@ const BOTTOM_NAV_LINKS = [
   { name: "Profile", href: "/profile", icon: User },
 ];
 
-export function Navbar() {
+export function Navbar({ profile }: { profile?: { full_name?: string; avatar_url?: string; role?: string } | null }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <>
@@ -114,15 +135,66 @@ export function Navbar() {
           </nav>
 
           {/* Right Actions: Search + Auth */}
-          <div className="flex items-center justify-end gap-2 lg:gap-4 lg:w-[180px]">
-            <Button variant="ghost" size="icon" className="text-gray-900">
+          <div className="flex items-center justify-end gap-2 lg:gap-4 lg:w-[220px]">
+            <Button variant="ghost" size="icon" className="text-gray-900 hidden sm:flex">
               <Search className="h-5 w-5 lg:h-6 lg:w-6" />
             </Button>
-            {/* Show Login only on tablet/desktop as mobile has bottom nav for profile */}
+            
+            {/* Show Login or Profile depending on Auth State */}
             <div className="hidden md:block">
-              <Button render={<Link href="/login" />} className="bg-coral-500 hover:bg-coral-600 text-white rounded-full px-6 transition-colors">
-                Masuk / Daftar
-              </Button>
+                {profile ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full border border-gray-200">
+                        <Avatar className="h-10 w-10 cursor-pointer">
+                          <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                          <AvatarFallback className="bg-teal-100 text-teal-700 font-bold">{getInitials(profile.full_name)}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent className="w-56" align="end">
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium leading-none text-gray-900">{profile.full_name}</p>
+                            <p className="text-xs leading-none text-gray-500 capitalize">{profile.role === 'counselor' ? 'Konselor' : profile.role === 'admin' ? 'Admin' : 'Siswa'}</p>
+                          </div>
+                        </DropdownMenuLabel>
+                      </DropdownMenuGroup>
+                      <DropdownMenuSeparator />
+                      
+                      {(profile.role === 'admin' || profile.role === 'counselor') && (
+                        <DropdownMenuItem>
+                          <Link href="/dashboard" className="cursor-pointer flex items-center w-full">
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            <span>Dashboard</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem>
+                        <Link href="/profile" className="cursor-pointer flex items-center w-full">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Profil Saya</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <form action={handleSignOut} className="w-full">
+                          <button type="submit" className="w-full text-left text-red-600 focus:bg-red-50 flex items-center">
+                            <LogOut className="mr-2 h-4 w-4" />
+                            <span>Keluar</span>
+                          </button>
+                        </form>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link href="/login" className={cn(buttonVariants({ variant: "default" }), "bg-coral-500 hover:bg-coral-600 text-white rounded-full px-6 transition-colors font-medium")}>
+                    Masuk / Daftar
+                  </Link>
+                )}
             </div>
           </div>
         </div>

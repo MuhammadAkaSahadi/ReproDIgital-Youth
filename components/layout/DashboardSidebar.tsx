@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Home, BookOpen, Target, Users, LogOut, Settings } from "lucide-react";
+import { signOut } from "@/app/auth/actions";
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ profile }: { profile?: any }) {
   const pathname = usePathname();
 
   const navigation = [
@@ -55,10 +56,12 @@ export function DashboardSidebar() {
       </div>
 
       <div className="p-4 border-t border-gray-200">
-        <button className="flex w-full items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-fast">
-          <LogOut className="mr-3 h-5 w-5" strokeWidth={2} />
-          Keluar
-        </button>
+        <form action={signOut}>
+          <button type="submit" className="flex w-full items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-fast">
+            <LogOut className="mr-3 h-5 w-5" strokeWidth={2} />
+            Keluar
+          </button>
+        </form>
       </div>
     </div>
   );
